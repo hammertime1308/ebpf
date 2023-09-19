@@ -1,4 +1,4 @@
-package drop_packets
+package main
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	"github.com/cilium/ebpf/link"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -cflags "-O2 -g -Wall -Werror" bpf bpf/drop_packets_kern.c -- -I../libbpf/src
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang -cflags "-O2 -g -Wall -Werror" bpf bpf/drop_packets_kern.c -- -I../../libbpf/src
 
 func main() {
 	if len(os.Args) < 2 {
@@ -52,10 +52,12 @@ func main() {
 	for range ticker.C {
 		s, err := formatMapContents(objs.XdpStatsMap)
 		if err != nil {
-			log.Printf("Error reading map: %s", err)
+			fmt.Printf("Error reading map: %s", err)
 			continue
 		}
-		log.Println(s)
+		if s != "" {
+			fmt.Println(s)
+		}
 	}
 }
 
@@ -69,7 +71,7 @@ func formatMapContents(m *ebpf.Map) (string, error) {
 	for iter.Next(&key, &val) {
 		sourceIP := net.IP(key) // IP address as populated by ebpf c code in map
 		packetCount := val
-		sb.WriteString(fmt.Sprintf("\t%s => %d\n", sourceIP, packetCount))
+		sb.WriteString(fmt.Sprintf("%s => %d", sourceIP, packetCount))
 	}
 	return sb.String(), iter.Err()
 }
